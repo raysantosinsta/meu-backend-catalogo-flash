@@ -57,4 +57,15 @@ export class TenantsService {
     }
     return tenant;
   }
+
+  async findAll() {
+    return this.prisma.tenant.findMany({
+      include: {
+        _count: {
+          select: { products: true, users: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

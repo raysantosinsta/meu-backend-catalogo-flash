@@ -1,9 +1,11 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+
+export const MASTER_ADMIN_EMAIL = 'santosray62@gmail.com';
 
 @Injectable()
 export class AuthService {
@@ -12,9 +14,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(registerDto: RegisterDto) {
+  private async createTenantAndUser(registerDto: RegisterDto) {
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: registerDto.email },
+      where: { email: registerDto.email.toLowerCase() },
     });
 
     if (existingUser) {
@@ -22,7 +24,7 @@ export class AuthService {
     }
 
     const existingTenant = await this.prisma.tenant.findUnique({
-      where: { slug: registerDto.tenantSlug },
+      where: { slug: registerDto.tenantSlug.toLowerCase() },
     });
 
     if (existingTenant) {
@@ -34,11 +36,11 @@ export class AuthService {
     const tenant = await this.prisma.tenant.create({
       data: {
         name: registerDto.tenantName,
-        slug: registerDto.tenantSlug,
+        slug: registerDto.tenantSlug.toLowerCase(),
         whatsapp: registerDto.whatsapp,
         users: {
           create: {
-            email: registerDto.email,
+            email: registerDto.email.toLowerCase(),
             password: hashedPassword,
           },
         },
@@ -49,10 +51,42 @@ export class AuthService {
     });
 
     const user = tenant.users[0];
-    const token = this.generateToken(user.id, user.email, tenant.id);
+    return { tenant, user };
+  }
+
+  // Registro público: somente permitido para bootstrap inicial do master admin caso ainda não exista no banco
+  async register(registerDto: RegisterDto) {
+    const isMasterEmail = registerDto.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+
+    const masterExists = await this.prisma.user.findUnique({
+      where: { email: MASTER_ADMIN_EMAIL.toLowerCase() },
+    });
+
+    if (!masterExists && isMasterEmail) {
+      const { tenant, user } = await this.createTenantAndUser(registerDto);
+      const token = this.generateToken(user.id, user.email, tenant.id);
+      return {
+        accessToken: token,
+        user: { id: user.id, email: user.email },
+        tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug, whatsapp: tenant.whatsapp },
+      };
+    }
+
+    throw new ForbiddenException(
+      'O auto-cadastro público está desativado. Somente o administrador master pode cadastrar novas lojas.',
+    );
+  }
+
+  // Criação de novas lojas por parte do administrador master autenticado
+  async createStoreAsMaster(adminEmail: string, registerDto: RegisterDto) {
+    if (adminEmail.toLowerCase() !== MASTER_ADMIN_EMAIL.toLowerCase()) {
+      throw new ForbiddenException('Apenas o administrador master pode cadastrar novas lojas.');
+    }
+
+    const { tenant, user } = await this.createTenantAndUser(registerDto);
 
     return {
-      accessToken: token,
+      message: 'Loja cadastrada com sucesso!',
       user: { id: user.id, email: user.email },
       tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug, whatsapp: tenant.whatsapp },
     };

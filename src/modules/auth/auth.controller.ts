@@ -14,6 +14,15 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('admin/create-store')
+  createStore(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() registerDto: RegisterDto,
+  ) {
+    return this.authService.createStoreAsMaster(user.email, registerDto);
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   login(@Body() loginDto: LoginDto) {
