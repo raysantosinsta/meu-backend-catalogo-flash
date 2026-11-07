@@ -10,6 +10,7 @@ import { ProductsModule } from './modules/products/products.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env', 'backend/.env'],
     }),
     PrismaModule,
     StorageModule,

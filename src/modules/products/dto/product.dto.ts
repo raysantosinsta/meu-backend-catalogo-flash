@@ -28,3 +28,26 @@ export class UpdateProductStatusDto {
   @IsBoolean()
   isActive?: boolean;
 }
+
+export class UpdateProductDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsOptional()
+  price?: number | string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true || (value === 'false' ? false : value))
+  @IsBoolean()
+  isFeatured?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true || (value === 'false' ? false : value))
+  @IsBoolean()
+  isActive?: boolean;
+}

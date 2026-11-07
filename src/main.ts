@@ -7,8 +7,12 @@ async function bootstrap() {
 
   // Habilitar CORS para o frontend Next.js
   app.enableCors({
-    origin: '*',
+    origin: (origin, callback) => {
+      // Permite conexões locais e navegadores dinamicamente
+      callback(null, true);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type,Accept,Authorization',
     credentials: true,
   });
 
