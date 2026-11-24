@@ -34,6 +34,9 @@ export class ProductsService {
     const rawPrice = String(createProductDto.price).replace(/[^\d.,]/g, '').replace(',', '.');
     const price = parseFloat(rawPrice) || 0;
 
+    const isAffiliate = createProductDto.isAffiliate === true || String(createProductDto.isAffiliate) === 'true';
+    const affiliateUrl = isAffiliate && createProductDto.affiliateUrl ? createProductDto.affiliateUrl.trim() : null;
+
     return this.prisma.product.create({
       data: {
         name: createProductDto.name,
@@ -42,6 +45,8 @@ export class ProductsService {
         imageUrl,
         imageKey,
         isFeatured: createProductDto.isFeatured || false,
+        isAffiliate,
+        affiliateUrl,
         tenantId,
       },
     });
@@ -107,6 +112,18 @@ export class ProductsService {
       }
     }
 
+    const isAffiliate = updateProductDto.isAffiliate !== undefined 
+      ? (updateProductDto.isAffiliate === true || String(updateProductDto.isAffiliate) === 'true')
+      : undefined;
+
+    let affiliateUrl: string | null | undefined = undefined;
+    if (updateProductDto.affiliateUrl !== undefined) {
+      affiliateUrl = updateProductDto.affiliateUrl ? updateProductDto.affiliateUrl.trim() : null;
+    }
+    if (isAffiliate === false) {
+      affiliateUrl = null;
+    }
+
     return this.prisma.product.update({
       where: { id },
       data: {
@@ -117,6 +134,8 @@ export class ProductsService {
         imageKey,
         ...(updateProductDto.isFeatured !== undefined && { isFeatured: updateProductDto.isFeatured }),
         ...(updateProductDto.isActive !== undefined && { isActive: updateProductDto.isActive }),
+        ...(isAffiliate !== undefined && { isAffiliate }),
+        ...(affiliateUrl !== undefined && { affiliateUrl }),
       },
     });
   }

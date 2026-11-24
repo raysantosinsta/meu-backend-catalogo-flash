@@ -17,6 +17,15 @@ export class CreateProductDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   isFeatured?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isAffiliate?: boolean;
+
+  @IsString()
+  @IsOptional()
+  affiliateUrl?: string;
 }
 
 export class UpdateProductStatusDto {
@@ -50,4 +59,13 @@ export class UpdateProductDto {
   @Transform(({ value }) => value === 'true' || value === true || (value === 'false' ? false : value))
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true || (value === 'false' ? false : value))
+  @IsBoolean()
+  isAffiliate?: boolean;
+
+  @IsString()
+  @IsOptional()
+  affiliateUrl?: string;
 }
